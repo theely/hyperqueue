@@ -1,11 +1,18 @@
 use crate::internal::common::resources::map::ResourceMap;
+use crate::internal::common::resources::request::ResourceRequestVariant;
 use crate::internal::common::resources::{ResourceAllocation, ResourceDescriptor, ResourceRequest};
 use crate::internal::common::Map;
 use crate::internal::worker::pool::ResourcePool;
 use crate::internal::worker::state::TaskMap;
 use crate::internal::worker::task::Task;
+use crate::resources::TimeRequest;
 use crate::{PriorityTuple, TaskId};
 use std::time::Duration;
+
+pub struct ResourceRequestEntry {
+    variant: ResourceRequestVariant,
+    min_time: TimeRequest,
+}
 
 pub struct ResourceWaitQueue {
     queues: Map<ResourceRequest, priority_queue::PriorityQueue<TaskId, PriorityTuple>>,

@@ -119,17 +119,9 @@ impl ResourceRequest {
         self.n_nodes
     }
 
-    /*pub fn generic_requests(&self) -> &GenericResourceRequests {
-        &self.generic
-    }*/
-
     pub fn min_time(&self) -> TimeRequest {
         self.min_time
     }
-
-    /*pub fn cpus(&self) -> &CpuRequest {
-        &self.cpus
-    }*/
 
     pub fn sort_key(
         &self,
