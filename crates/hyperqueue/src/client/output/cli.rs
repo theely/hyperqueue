@@ -496,6 +496,7 @@ impl Output for CliOutput {
             let JobDetail {
                 info,
                 job_desc,
+                submit_descs,
                 mut tasks,
                 tasks_not_found: _,
                 submission_date,
@@ -517,13 +518,18 @@ impl Output for CliOutput {
             rows.push(vec![state_label, status]);
 
             let mut n_tasks = info.n_tasks.to_string();
-            match &job_desc.task_desc {
-                JobTaskDescription::Array { ids, .. } => {
-                    write!(n_tasks, "; Ids: {ids}").unwrap();
-                }
-                JobTaskDescription::Graph { .. } => {
-                    // TODO
-                }
+            let ids =
+                IntArray::from_non_overlapping(submit_descs.iter().filter_map(|submit_desc| {
+                    match &submit_desc.task_desc {
+                        JobTaskDescription::Array { ids, .. } => Some(ids),
+                        JobTaskDescription::Graph { .. } => {
+                            // TODO
+                            None
+                        }
+                    }
+                }));
+            if !ids.is_empty() {
+                write!(n_tasks, "; Ids: {ids}").unwrap();
             }
 
             rows.push(vec!["Tasks".cell().bold(true), n_tasks.cell()]);
@@ -532,8 +538,10 @@ impl Output for CliOutput {
                 format_job_workers(&tasks, &worker_map).cell(),
             ]);
 
-            if let JobTaskDescription::Array { task_desc, .. } = &job_desc.task_desc {
-                self.print_job_shared_task_description(&mut rows, task_desc);
+            if submit_descs.len() == 1 {
+                if let JobTaskDescription::Array { task_desc, .. } = &submit_descs[0].task_desc {
+                    self.print_job_shared_task_description(&mut rows, task_desc);
+                }
             }
 
             rows.push(vec![
@@ -541,10 +549,12 @@ impl Output for CliOutput {
                 submission_date.round_subsecs(0).cell(),
             ]);
 
-            rows.push(vec![
-                "Submission directory".cell().bold(true),
-                job_desc.submit_dir.to_str().unwrap().cell(),
-            ]);
+            if submit_descs.len() == 1 {
+                rows.push(vec![
+                    "Submission directory".cell().bold(true),
+                    submit_descs[0].submit_dir.to_str().unwrap().cell(),
+                ]);
+            }
 
             rows.push(vec![
                 "Makespan".cell().bold(true),
