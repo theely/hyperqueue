@@ -533,6 +533,9 @@ async fn create_task_future(
 
     log::trace!("Running command {:?}", command);
 
+    if std::env::var_os("HQ_FAST_SPAWN").is_some() {
+        command.env_clear();
+    }
     let mut child = tokio::task::spawn_blocking(move || command.spawn())
         .await
         .expect("Command spawning failed")

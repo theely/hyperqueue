@@ -190,7 +190,9 @@ pub fn command_from_definitions(definition: &ProgramDefinition) -> crate::Result
 
     std::fs::create_dir_all(&definition.cwd)
         .map_err(|error| GenericError(format!("Could not create working directory: {error:?}")))?;
-    command.current_dir(&definition.cwd);
+    if std::env::var_os("HQ_FAST_SPAWN").is_none() {
+        command.current_dir(&definition.cwd);
+    }
 
     command.stdout(create_output_stream(&definition.stdout, &definition.cwd)?);
     command.stderr(create_output_stream(&definition.stderr, &definition.cwd)?);
