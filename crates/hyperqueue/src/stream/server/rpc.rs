@@ -116,6 +116,7 @@ async fn file_writer(receiver: &mut Receiver<StreamMessage>, path: &Path) -> any
     file.write_all(&buffer).await?;
     file.flush().await?; // Make sure that header is written to avoid empty files for long time
 
+    let write_data = std::env::var_os("HQ_SKIP_STREAMING_LOG_WRITE").is_none();
     while let Some(msg) = receiver.recv().await {
         buffer.clear();
         match msg {
@@ -138,9 +139,11 @@ async fn file_writer(receiver: &mut Receiver<StreamMessage>, path: &Path) -> any
                     send_error(response_sender, e.to_string());
                     return Err(e.into());
                 }
-                if let Err(e) = file.write_all(&s.data).await {
-                    send_error(response_sender, e.to_string());
-                    return Err(e.into());
+                if write_data {
+                    if let Err(e) = file.write_all(&s.data).await {
+                        send_error(response_sender, e.to_string());
+                        return Err(e.into());
+                    }
                 }
             }
             StreamMessage::Message(FromStreamerMessage::End(s), response_sender) => {
@@ -151,9 +154,11 @@ async fn file_writer(receiver: &mut Receiver<StreamMessage>, path: &Path) -> any
                     send_error(response_sender, e.to_string());
                     return Err(e.into());
                 }
-                if let Err(e) = file.flush().await {
-                    send_error(response_sender, e.to_string());
-                    return Err(e.into());
+                if write_data {
+                    if let Err(e) = file.flush().await {
+                        send_error(response_sender, e.to_string());
+                        return Err(e.into());
+                    }
                 }
                 let msg = ToStreamerMessage::EndResponse(EndTaskStreamResponseMsg { task: s.task });
                 let data = tako::comm::serialize(&msg).unwrap();
